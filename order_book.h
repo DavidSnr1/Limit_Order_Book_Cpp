@@ -1,16 +1,31 @@
 #pragma once;
 #include "order.h";
+#include "types.h";
+#include <map>
+#include <list>
+#include <unordered_map>
 
-//eine buy side list an orders absteigend im preis
+class OrderBook {
+    public:
 
-//eine sell side list an orders aufsteigend im preis
+    bool add_order(Order order);
+    bool cancel_order(OrderId id);
+    bool display(int depth = 5);
 
-//eine hashmap mit order id als key und listen pos in buy/sell liste als value
+    private:
 
-//Methoden:
+    void match();
 
-// add_order: einfügen in buy/sell liste, hasmap updaten, match check durchführen
+    using OrderList = std::list<Order>;
+    using OrderIt = OrderList::iterator;
 
-// cancel_order: index aus hashmap nutzen um aus buy/sell liste entfernen, hasmap updaten
+    struct OrderLocation {
+        Price price;
+        Side side;
+        OrderIt it;
+    };
 
-// display: obersten n orders von buy/sell liste anzeigen
+    std::map<Price, std::list<Order>, std::greater<Price>> bids;
+    std::map<Price, std::list<Order>> asks;
+    std::unordered_map<OrderId, OrderLocation> order_map;
+};

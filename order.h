@@ -1,7 +1,7 @@
 #pragma once;
 #include "types.h";
 
-struct order {
+struct Order {
     OrderId id;
     Price price;
     Volume volume;
