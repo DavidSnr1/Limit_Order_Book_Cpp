@@ -39,54 +39,81 @@ bool OrderBook::cancel_order(OrderId o_id){
 
 void OrderBook::match() {
     while (!bids.empty() && !asks.empty()) {
-        auto& [best_bid_price, bid_queue] = *bids.begin();
-        auto& [best_ask_price, ask_queue] = *asks.begin();
+        auto bid_it = bids.begin();
+        auto ask_it = asks.begin();
+        if (bid_it->first < ask_it->first) break;
 
-        if (best_bid_price < best_ask_price) break; 
+        auto& bid_queue = bid_it->second;
+        auto& ask_queue = ask_it->second;
+        Order& b = bid_queue.front();
+        Order& a = ask_queue.front();
 
-        Order& b_ord = bid_queue.front();
-        Order& a_ord = ask_queue.front();
+        Volume trade_vol = std::min(b.volume, a.volume);
+        b.volume -= trade_vol;
+        a.volume -= trade_vol;
 
-        Price match_price = (b_ord.timestamp < a_ord.timestamp) ? best_bid_price : best_ask_price;
-        uint32_t match_vol = std::min(b_ord.volume, a_ord.volume);
+        OrderId b_id = b.id;   // sichern, bevor pop_front die Referenzen killt
+        OrderId a_id = a.id;
 
-        b_ord.volume -= match_vol;
-        a_ord.volume -= match_vol;
-
-        if (b_ord.volume == 0) {
-            order_map.erase(b_ord.id);
+        if (b.volume == 0) {
+            order_map.erase(b_id);
             bid_queue.pop_front();
+            if (bid_queue.empty()) bids.erase(bid_it);
         }
-        if (a_ord.volume == 0) {
-            order_map.erase(b_ord.id);
-            bid_queue.pop_front();
+        if (a.volume == 0) {
+            order_map.erase(a_id);
+            ask_queue.pop_front();
+            if (ask_queue.empty()) asks.erase(ask_it);
         }
     }
 }
 
+std::optional<Price> OrderBook::best_bid() const {
+    if (bids.empty()) return std::nullopt;
+    return bids.begin()->first;   // greater<Price> => hoechster Preis zuerst
+}
+
+std::optional<Price> OrderBook::best_ask() const {
+    if (asks.empty()) return std::nullopt;
+    return asks.begin()->first;   // aufsteigend => niedrigster Preis zuerst
+}
+
+std::optional<Volume> OrderBook::order_volume(OrderId id) const {
+    auto it = order_map.find(id);
+    if (it == order_map.end()) return std::nullopt;
+    return it->second.it->volume;
+}
+
+std::size_t OrderBook::order_count() const {
+    return order_map.size();
+}
+
 bool OrderBook::display (int depth){
+    std::cout << "--- BID ---" << std::endl;
     int d = 0;
-    for (auto& const [price, list] : bids){
+    for (const auto& [price, list] : bids){
         if (d >= depth) break;
         std::cout << price << " | ";
-        for (auto& const order : list){
+        for (const auto& order : list){
             std::cout << " [ " << order.volume << " ] ";
         }
         std::cout << std::endl;
         ++d;
     }
 
+    std::cout << "--- ASK ---" << std::endl;
     d=0;
 
-    for (auto& const [price, list] : asks){
+    for (const auto& [price, list] : asks){
         if (d >= depth) break;
         std::cout << price << " | ";
-        for (auto& const order : list){
+        for (const auto& order : list){
             std::cout << " [ " << order.volume << " ] ";
         }
         std::cout << std::endl;
         ++d;
     }
-    return true;   
+    std::cout << std::endl;
+    return true;
 }
 

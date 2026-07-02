@@ -1,9 +1,13 @@
-#pragma once;
-#include "order.h";
-#include "types.h";
+#pragma once
+#include "order.h"
+#include "types.h"
 #include <map>
 #include <list>
 #include <unordered_map>
+#include <functional>
+#include <optional>
+#include <cstddef>
+
 
 class OrderBook {
     public:
@@ -11,6 +15,14 @@ class OrderBook {
     bool add_order(Order order);
     bool cancel_order(OrderId id);
     bool display(int depth = 5);
+
+
+    std::optional<Price> best_bid() const;
+    std::optional<Price> best_ask() const;
+
+    std::optional<Volume> order_volume(OrderId id) const;
+
+    std::size_t order_count() const;
 
     private:
 

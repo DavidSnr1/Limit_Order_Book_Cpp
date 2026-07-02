@@ -1,5 +1,5 @@
-#pragma once;
-#include "types.h";
+#pragma once
+#include "types.h"
 
 struct Order {
     OrderId id;

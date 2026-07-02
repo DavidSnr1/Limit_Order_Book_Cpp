@@ -1,30 +1,24 @@
-#pragma once;
-#include <cstdlib>
-#include "order_book.h"
-#include <chrono>
+#include "feed_simulator.h"
 
-void generateX(OrderBook& ob, int count, Price base_price, Volume base_volume) {
-    while (count > 0) {
-        bool is_ask = (rand() % 100) >= 50;
+Order generateX(OrderId id, Price base_price, Volume base_volume) {
 
-        int offset = (rand() % 11) - 5; 
-        Price price = base_price + offset; 
+    bool is_ask = (rand() % 100) >= 50;
 
-        Volume volume = base_volume + (rand() % 10); 
+    int offset = (rand() % 11) - 5; 
+    Price price = base_price + offset; 
 
-        uint64_t timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch()
-        ).count();          
+    Volume volume = base_volume + (rand() % 10); 
 
-        Side side = is_ask ? Side::Sell : Side::Buy;
-        Order order{ (OrderId)count, price, volume, side, timestamp };
+    uint64_t timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()
+    ).count();          
 
-        ob.add_order(order);
-        --count;
-    }
+    Side side = is_ask ? Side::Sell : Side::Buy;
+
+    Order order = Order{id, price, volume, side, timestamp};
+
+    return order;
 }
-
-
 
 
 
