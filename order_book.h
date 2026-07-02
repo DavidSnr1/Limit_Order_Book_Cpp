@@ -1,6 +1,8 @@
 #pragma once
 #include "order.h"
 #include "types.h"
+#include "trade.h"
+#include <vector>
 #include <map>
 #include <list>
 #include <unordered_map>
@@ -39,5 +41,6 @@ class OrderBook {
 
     std::map<Price, std::list<Order>, std::greater<Price>> bids;
     std::map<Price, std::list<Order>> asks;
+    std::vector<Trade> trade_log;
     std::unordered_map<OrderId, OrderLocation> order_map;
 };

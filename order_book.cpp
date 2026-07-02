@@ -52,8 +52,22 @@ void OrderBook::match() {
         b.volume -= trade_vol;
         a.volume -= trade_vol;
 
-        OrderId b_id = b.id;   // sichern, bevor pop_front die Referenzen killt
         OrderId a_id = a.id;
+        OrderId b_id = b.id;
+
+        Order resting_o;
+        a.timestamp < b.timestamp ? resting_o = a : resting_o = b;
+
+        Trade trade = {
+            resting_o.price,
+            trade_vol,
+            b_id,
+            a_id
+        };
+
+        trade_log.push_back(trade);
+
+        std::cout << "Trade @ Quantity " << trade.qty << " @ Price: " << trade.price << "\n";
 
         if (b.volume == 0) {
             order_map.erase(b_id);
@@ -70,12 +84,12 @@ void OrderBook::match() {
 
 std::optional<Price> OrderBook::best_bid() const {
     if (bids.empty()) return std::nullopt;
-    return bids.begin()->first;   // greater<Price> => hoechster Preis zuerst
+    return bids.begin()->first;   
 }
 
 std::optional<Price> OrderBook::best_ask() const {
     if (asks.empty()) return std::nullopt;
-    return asks.begin()->first;   // aufsteigend => niedrigster Preis zuerst
+    return asks.begin()->first;   
 }
 
 std::optional<Volume> OrderBook::order_volume(OrderId id) const {
