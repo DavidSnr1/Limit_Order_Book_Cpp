@@ -1,5 +1,4 @@
 #include "order_book.h"
-#include <iostream>
 
 bool OrderBook::add_order(Order order){
     if (order.side == Side::Buy){
@@ -82,26 +81,6 @@ void OrderBook::match() {
     }
 }
 
-std::optional<Price> OrderBook::best_bid() const {
-    if (bids.empty()) return std::nullopt;
-    return bids.begin()->first;   
-}
-
-std::optional<Price> OrderBook::best_ask() const {
-    if (asks.empty()) return std::nullopt;
-    return asks.begin()->first;   
-}
-
-std::optional<Volume> OrderBook::order_volume(OrderId id) const {
-    auto it = order_map.find(id);
-    if (it == order_map.end()) return std::nullopt;
-    return it->second.it->volume;
-}
-
-std::size_t OrderBook::order_count() const {
-    return order_map.size();
-}
-
 bool OrderBook::display (int depth){
     std::cout << "--- BID ---" << std::endl;
     int d = 0;
@@ -130,4 +109,28 @@ bool OrderBook::display (int depth){
     std::cout << std::endl;
     return true;
 }
+
+std::optional<Price> OrderBook::best_bid() const {
+    if (bids.empty()) return std::nullopt;
+    return bids.begin()->first;   
+}
+
+std::optional<Price> OrderBook::best_ask() const {
+    if (asks.empty()) return std::nullopt;
+    return asks.begin()->first;   
+}
+
+std::optional<Volume> OrderBook::order_volume(OrderId id) const {
+    auto it = order_map.find(id);
+    if (it == order_map.end()) return std::nullopt;
+    return it->second.it->volume;
+}
+
+std::size_t OrderBook::order_count() const {
+    return order_map.size();
+}
+
+
+
+
 
