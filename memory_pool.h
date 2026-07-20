@@ -15,7 +15,6 @@ class MemoryPool {
     private:
         void grow();
 
-
         size_t blockSize_;
         size_t blockCount_;
         std::vector<char*> freeBlocks_;

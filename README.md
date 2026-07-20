@@ -9,12 +9,14 @@ In jedem elektronischen Handelssystem (NASDAQ, NYSE, Krypto-Börsen) trifft eine
 ## Projektstruktur
 
 - `types.h` — Basistypen (`OrderId`, `Price`, `Volume` als `uint64_t`; `Side`, `MessageType`)
-- `order.h` — das `Order`-Struct
+- `order.h` — das `Order`-Struct (inkl. `next_order`/`prev_order` für die Intrusive List)
 - `trade.h` — das `Trade`-Struct (Ergebnis eines Matches)
-- `order_book.h` / `order_book.cpp` — die Engine: `add_order`, `cancel_order`, `display`, Matching mit Preis-Zeit-Priorität
+- `memory_pool.h` / `memory_pool.cpp` — Pre-allocated Pool mit Free-List statt Heap-Allokation pro Order
+- `order_book.h` / `order_book.cpp` — die Engine: `add_order`, `cancel_order`, `display`, Matching mit Preis-Zeit-Priorität; Preis-Levels sind Intrusive Linked Lists, deren Knoten aus dem `MemoryPool` kommen
 - `feed_simulator.h` / `feed_simulator.cpp` — generiert zufällige Test-Orders
 - `main.cpp` — verbindet Simulator und Order Book zu einer lauffähigen Demo
 - `tests/test_matching.cpp` — Testfälle für Insert/Match/Cancel (doctest)
+- `tests/test_memory_pool.cpp` — Testfälle für den Memory Pool (Allokation, Wiederverwendung, Wachstum, Guard gegen `blockCount == 0`)
 
 ## Bauen & Ausführen
 
@@ -50,12 +52,19 @@ Jede Buch-Zeile: `Preis | [Restvolumen Order 1] [Restvolumen Order 2] ...`, sort
 
 ## Aktueller Stand
 
-MVP fertig: Einfügen, Matching, Cancel, Trade-Ausgabe (live + Log), lauffähig über `make`, Tests grün, keine Compiler-Warnungen (`-Wall -Wextra`).
+MVP (Teil 1) ist fertig. Schritt 4/5 der "Receive Side Masterclass" (siehe [TODO.md](TODO.md)) sind jetzt ebenfalls abgeschlossen: `std::list<Order>` ist komplett aus dem Projekt raus, ersetzt durch einen `MemoryPool` + eine Intrusive Linked List (`next_order`/`prev_order` liegen direkt im `Order`-Struct — jeder Preis-Level in `bids`/`asks` ist nur noch ein `OrderQueue{head, tail}`, keine separate Heap-Allokation pro Listenknoten mehr).
 
-Als Nächstes geplant — die "Receive Side Masterclass" (siehe [TODO.md](TODO.md) für Details):
+Fertig:
+- `MemoryPool` (Allokation, Wiederverwendung, Wachstum, Guard gegen `blockCount == 0`) — eigenständig getestet
+- `add_order` — Pool-Allokation + Placement-New + Verlinken ans Ende der Queue
+- `cancel_order` — Order per `order_map` finden, aus der Kette aushängen (4 Fälle: einziges Element / Kopf / Ende / Mitte), Destruktor + `deallocate`
+- `match()` — arbeitet auf `head`/manuellem Aushängen statt `front()`/`pop_front()`
+- `display()`, `order_volume()` — auf Zeiger-Traversierung umgestellt
 
-- Memory Pool statt `std::list` für die Order-Allokation
-- Intrusive Linked List für Cache-Lokalität
+Baut sauber (`make all`), keine Compiler-Warnungen, alle Tests grün.
+
+Als Nächstes — Rest der "Receive Side Masterclass":
+
 - Echter NASDAQ-ITCH-Parser statt Zufalls-Simulator
-- Benchmarking: naive vs. Pool-Version, p50/p99-Latenzen
+- Benchmarking: naive `std::list`- vs. Pool-Version, p50/p99-Latenzen
 - Lock-Free SPSC Queue zur Trennung von Parser- und Matching-Thread

@@ -7,4 +7,6 @@ struct Order {
     Volume volume;
     Side side;
     uint64_t timestamp;
+    Order* next_order = nullptr;
+    Order* prev_order = nullptr;
 };

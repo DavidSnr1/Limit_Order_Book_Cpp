@@ -2,6 +2,7 @@
 #include "order.h"
 #include "types.h"
 #include "trade.h"
+#include "memory_pool.h"
 #include <vector>
 #include <map>
 #include <list>
@@ -31,17 +32,20 @@ class OrderBook {
 
     void match();
 
-    using OrderList = std::list<Order>;
-    using OrderIt = OrderList::iterator;
+    struct OrderQueue {
+        Order* head = nullptr;
+        Order* tail = nullptr;
+    };
 
     struct OrderLocation {
         Price price;
         Side side;
-        OrderIt it;
+        Order* order;
     };
 
-    std::map<Price, std::list<Order>, std::greater<Price>> bids;
-    std::map<Price, std::list<Order>> asks;
+    MemoryPool order_pool_{sizeof(Order), 1024}; 
+    std::map<Price, OrderQueue, std::greater<Price>> bids;
+    std::map<Price, OrderQueue> asks;
     std::vector<Trade> trade_log;
     std::unordered_map<OrderId, OrderLocation> order_map;
 };
