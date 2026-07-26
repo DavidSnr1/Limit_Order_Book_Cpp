@@ -1,0 +1,15 @@
+# Build artifacts
+*.exe
+*.o
+*.obj
+*.out
+build/
+bin/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor junk
+.vscode/
+*.swp

@@ -15,7 +15,7 @@ static Order make_order(OrderId id, Side side, Price price, Volume volume,
 }
 
 
-TEST_CASE("kein Match wenn bid unter ask liegt") {
+TEST_CASE("no match when bid is below ask") {
     OrderBook ob;
     ob.add_order(make_order(1, Side::Buy,  100, 10, 1));
     ob.add_order(make_order(2, Side::Sell, 101, 10, 2));
@@ -28,7 +28,7 @@ TEST_CASE("kein Match wenn bid unter ask liegt") {
 }
 
 
-TEST_CASE("exakter Match loescht beide Orders") {
+TEST_CASE("exact match removes both orders") {
     OrderBook ob;
     ob.add_order(make_order(1, Side::Buy,  100, 10, 1));
     ob.add_order(make_order(2, Side::Sell, 100, 10, 2));
@@ -41,10 +41,10 @@ TEST_CASE("exakter Match loescht beide Orders") {
 }
 
 
-TEST_CASE("aggressive Order crosst den Spread") {
+TEST_CASE("aggressive order crosses the spread") {
     OrderBook ob;
-    ob.add_order(make_order(1, Side::Sell, 100, 10, 1)); 
-    ob.add_order(make_order(2, Side::Buy,  101, 10, 2)); 
+    ob.add_order(make_order(1, Side::Sell, 100, 10, 1));
+    ob.add_order(make_order(2, Side::Buy,  101, 10, 2));
 
     CHECK(ob.order_count() == 0);
     CHECK_FALSE(ob.order_volume(1).has_value());
@@ -52,79 +52,79 @@ TEST_CASE("aggressive Order crosst den Spread") {
 }
 
 
-TEST_CASE("Teilfuellung - eingehende Order ist groesser") {
+TEST_CASE("partial fill, incoming order is larger") {
     OrderBook ob;
-    ob.add_order(make_order(1, Side::Buy,  100, 5,  1)); 
-    ob.add_order(make_order(2, Side::Sell, 100, 10, 2));  
+    ob.add_order(make_order(1, Side::Buy,  100, 5,  1));
+    ob.add_order(make_order(2, Side::Sell, 100, 10, 2));
 
     CHECK(ob.order_count() == 1);
-    CHECK_FALSE(ob.order_volume(1).has_value()); 
-    CHECK(ob.order_volume(2) == 5);              
-    CHECK(ob.best_ask() == 100);                 
+    CHECK_FALSE(ob.order_volume(1).has_value());
+    CHECK(ob.order_volume(2) == 5);
+    CHECK(ob.best_ask() == 100);
     CHECK_FALSE(ob.best_bid().has_value());
 }
 
 
-TEST_CASE("Teilfuellung - ruhende Order ist groesser") {
+TEST_CASE("partial fill, resting order is larger") {
     OrderBook ob;
-    ob.add_order(make_order(1, Side::Buy,  100, 10, 1)); 
-    ob.add_order(make_order(2, Side::Sell, 100, 4,  2)); 
+    ob.add_order(make_order(1, Side::Buy,  100, 10, 1));
+    ob.add_order(make_order(2, Side::Sell, 100, 4,  2));
 
     CHECK(ob.order_count() == 1);
-    CHECK(ob.order_volume(1) == 6);              
-    CHECK_FALSE(ob.order_volume(2).has_value()); 
+    CHECK(ob.order_volume(1) == 6);
+    CHECK_FALSE(ob.order_volume(2).has_value());
     CHECK(ob.best_bid() == 100);
     CHECK_FALSE(ob.best_ask().has_value());
 }
 
 
-TEST_CASE("Zeitprioritaet - aeltere Order bei gleichem Preis zuerst") {
-    OrderBook ob;
-    ob.add_order(make_order(1, Side::Buy, 100, 5, 1)); 
-    ob.add_order(make_order(2, Side::Buy, 100, 5, 2)); 
-
-    ob.add_order(make_order(3, Side::Sell, 100, 5, 3)); 
-
-    CHECK(ob.order_count() == 1);
-    CHECK_FALSE(ob.order_volume(1).has_value()); 
-    CHECK(ob.order_volume(2) == 5);              
-    CHECK_FALSE(ob.order_volume(3).has_value()); 
-}
-
-
-TEST_CASE("Preisprioritaet - hoechster Bid zuerst") {
-    OrderBook ob;
-    ob.add_order(make_order(1, Side::Buy, 100, 5, 1));
-    ob.add_order(make_order(2, Side::Buy, 101, 5, 2)); 
-
-    ob.add_order(make_order(3, Side::Sell, 100, 5, 3));
-
-    CHECK(ob.order_count() == 1);
-    CHECK_FALSE(ob.order_volume(2).has_value()); 
-    CHECK(ob.order_volume(1) == 5);              
-    CHECK(ob.best_bid() == 100);
-}
-
-
-TEST_CASE("Preisprioritaet - niedrigster Ask zuerst") {
-    OrderBook ob;
-    ob.add_order(make_order(1, Side::Sell, 101, 5, 1));
-    ob.add_order(make_order(2, Side::Sell, 100, 5, 2)); 
-
-    ob.add_order(make_order(3, Side::Buy, 101, 5, 3));
-
-    CHECK(ob.order_count() == 1);
-    CHECK_FALSE(ob.order_volume(2).has_value()); 
-    CHECK(ob.order_volume(1) == 5);              
-    CHECK(ob.best_ask() == 101);
-}
-
-TEST_CASE("Sweep ueber mehrere ruhende Orders") {
+TEST_CASE("time priority, older order at the same price goes first") {
     OrderBook ob;
     ob.add_order(make_order(1, Side::Buy, 100, 5, 1));
     ob.add_order(make_order(2, Side::Buy, 100, 5, 2));
 
-    ob.add_order(make_order(3, Side::Sell, 100, 10, 3)); 
+    ob.add_order(make_order(3, Side::Sell, 100, 5, 3));
+
+    CHECK(ob.order_count() == 1);
+    CHECK_FALSE(ob.order_volume(1).has_value());
+    CHECK(ob.order_volume(2) == 5);
+    CHECK_FALSE(ob.order_volume(3).has_value());
+}
+
+
+TEST_CASE("price priority, highest bid goes first") {
+    OrderBook ob;
+    ob.add_order(make_order(1, Side::Buy, 100, 5, 1));
+    ob.add_order(make_order(2, Side::Buy, 101, 5, 2));
+
+    ob.add_order(make_order(3, Side::Sell, 100, 5, 3));
+
+    CHECK(ob.order_count() == 1);
+    CHECK_FALSE(ob.order_volume(2).has_value());
+    CHECK(ob.order_volume(1) == 5);
+    CHECK(ob.best_bid() == 100);
+}
+
+
+TEST_CASE("price priority, lowest ask goes first") {
+    OrderBook ob;
+    ob.add_order(make_order(1, Side::Sell, 101, 5, 1));
+    ob.add_order(make_order(2, Side::Sell, 100, 5, 2));
+
+    ob.add_order(make_order(3, Side::Buy, 101, 5, 3));
+
+    CHECK(ob.order_count() == 1);
+    CHECK_FALSE(ob.order_volume(2).has_value());
+    CHECK(ob.order_volume(1) == 5);
+    CHECK(ob.best_ask() == 101);
+}
+
+TEST_CASE("sweep across multiple resting orders") {
+    OrderBook ob;
+    ob.add_order(make_order(1, Side::Buy, 100, 5, 1));
+    ob.add_order(make_order(2, Side::Buy, 100, 5, 2));
+
+    ob.add_order(make_order(3, Side::Sell, 100, 10, 3));
 
     CHECK(ob.order_count() == 0);
     CHECK_FALSE(ob.order_volume(1).has_value());
@@ -133,34 +133,34 @@ TEST_CASE("Sweep ueber mehrere ruhende Orders") {
 }
 
 
-TEST_CASE("Cancel unbekannter ID gibt false zurueck") {
+TEST_CASE("cancel of an unknown id returns false") {
     OrderBook ob;
     CHECK_FALSE(ob.cancel_order(999));
 
     ob.add_order(make_order(1, Side::Buy, 100, 5, 1));
-    CHECK_FALSE(ob.cancel_order(2)); 
-    CHECK(ob.order_count() == 1);   
+    CHECK_FALSE(ob.cancel_order(2));
+    CHECK(ob.order_count() == 1);
 }
 
 
-TEST_CASE("Cancel entfernt Order genau einmal") {
+TEST_CASE("cancel removes an order exactly once") {
     OrderBook ob;
     ob.add_order(make_order(1, Side::Buy, 100, 5, 1));
 
-    CHECK(ob.cancel_order(1));                    
+    CHECK(ob.cancel_order(1));
     CHECK(ob.order_count() == 0);
     CHECK_FALSE(ob.order_volume(1).has_value());
-    CHECK_FALSE(ob.cancel_order(1));              
+    CHECK_FALSE(ob.cancel_order(1));
 }
 
 
-TEST_CASE("Cancel raeumt leeres Preislevel ab") {
+TEST_CASE("cancel cleans up an empty price level") {
     OrderBook ob;
     ob.add_order(make_order(1, Side::Buy, 100, 5, 1));
     ob.add_order(make_order(2, Side::Buy, 101, 5, 2));
 
     CHECK(ob.best_bid() == 101);
-    CHECK(ob.cancel_order(2));       
-    CHECK(ob.best_bid() == 100);     
+    CHECK(ob.cancel_order(2));
+    CHECK(ob.best_bid() == 100);
     CHECK(ob.order_count() == 1);
 }

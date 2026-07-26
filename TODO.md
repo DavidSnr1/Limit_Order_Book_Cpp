@@ -1,110 +1,112 @@
-# Limit Order Book ? Nächste Schritte (Stand 01.07.2026)
+# Limit Order Book: Next Steps (as of 2026-07-01)
 
-## Ausgangslage
+Status update: part 1 (the MVP) and steps 4 and 5 of part 2 below are complete. See [README.md](README.md) for the current state of the project; the rest of this file is the original plan, kept as a record of the reasoning and the remaining steps.
 
-Der Kern steht sauber: Einfügen, Matching mit Preis-Zeit-Priorität, Cancel, 12 grüne Tests. Was fehlt: das Projekt ist noch nicht lauffähig und noch nicht auf Produktionsniveau. Der Plan hat zwei Teile ? erst **MVP abschließen** (lauffähig + sauber), dann **Receive Side Masterclass** (die 70h Ausbau).
+## Starting point
+
+The core is solid: inserting, matching with price time priority, cancel, 12 green tests. What is missing: the project is not runnable yet and not at production quality. The plan has two parts: first **finish the MVP** (runnable and clean), then the **receive side masterclass** (the roughly 70h extension).
 
 ---
 
-## TEIL 1 ? MVP wirklich abschließen
+## PART 1: Actually finish the MVP
 
-Zuerst lauffähig und sauber machen, bevor irgendein neues Feature dazukommt. Ein Projekt das nicht startet ist wertlos, egal wie gut die Engine ist.
+Get it runnable and clean first, before any new feature gets added. A project that does not start is worthless, no matter how good the engine is.
 
-### Schritt 1 ? Lauffähig machen (~5h)
+### Step 1: Make it runnable (about 5h)
 
-**main.cpp** ? verbindet Simulator und Order Book:
+**main.cpp**: connects the simulator and the order book:
 ```
-Order Book erstellen
-Simulator generiert Orders
-? jede Order durch add_order
-? nach jedem Add: display()
+create the order book
+simulator generates orders
+  each order through add_order
+  after each add: display()
 ```
 
-**Makefile** ? damit `make` alles baut:
+**Makefile**: so `make` builds everything:
 ```
-Build-Target für die App
-Build-Target für die Tests
+build target for the app
+build target for the tests
 clean
 ```
 
-Ergebnis: jemand kann das Repo klonen, `make` tippen und es laufen sehen. Grundvoraussetzung für Vorzeigbarkeit.
+Result: someone can clone the repo, type `make`, and see it run. Baseline requirement to be presentable.
 
-### Schritt 2 ? Trade-Ausgabe (~3h)
+### Step 2: Trade output (about 3h)
 
-Die wichtigste fachliche Lücke. Ein Order Book das Trades still verrechnet ist wie ein Taschenrechner der das Ergebnis nicht anzeigt.
+The most important functional gap. An order book that settles trades silently is like a calculator that never shows the result.
 
 ```
-In match(): bei jeder Ausführung ein Trade-Objekt erzeugen
+in match(): create a Trade object for every execution
 struct Trade { Price price; Volume qty; OrderId buy_id, sell_id; }
-? in einen Trade-Log-Vektor pushen
-? optional live ausgeben: "TRADE: 100 @ $67.20"
+  push into a trade log vector
+  optionally print live: "TRADE: 100 @ $67.20"
 ```
 
-Wird später auch für die P&L-Rechnung der Send Side gebraucht ? jetzt richtig bauen.
+Also needed later for the send side's P&L calculation, so build it properly now.
 
-### Schritt 3 ? Aufräumen (~2h)
+### Step 3: Cleanup (about 2h)
 
 ```
-Header-Warnungen bereinigen
-timestamp entweder nutzen oder als "kommt in Phase 2" kommentieren
-README ehrlich machen (Makefile existiert jetzt wirklich)
+clean up header warnings
+either use timestamp or comment it as "coming in phase 2"
+make the README honest (the Makefile now really exists)
 ```
 
-Danach ist der MVP **fertig und sauber** ? committen und als abgeschlossen betrachten.
+After that the MVP is **done and clean**: commit it and consider it complete.
 
 ---
 
-## TEIL 2 ? Receive Side Masterclass (die 70h)
+## PART 2: Receive side masterclass (the roughly 70h)
 
-Jetzt wird aus dem soliden MVP ein beeindruckendes System. In dieser Reihenfolge.
+Now the solid MVP becomes an impressive system, in this order.
 
-### Schritt 4 ? Memory Pool (~15h)
-Statt `std::list` (alloziert pro Node einzeln) ein vorallokierter Pool mit Freistapel. Erster echter Performance-Sprung, erster Benchmark-Wert. Orders kommen aus dem Pool in ~10ns statt ~1000ns.
+### Step 4: Memory pool (about 15h)
+Instead of `std::list` (allocates per node individually), a pre allocated pool with a free stack. First real performance jump, first benchmark number. Orders come out of the pool in about 10ns instead of about 1000ns.
 
-### Schritt 5 ? Intrusive Linked List (~parallel zu 4)
-`next_idx`/`prev_idx` direkt im Order-Struct, verzahnt mit dem Pool. Cache-Lokalität ? die Orders liegen zusammenhängend im Speicher.
+### Step 5: Intrusive linked list (roughly in parallel with step 4)
+`next_idx`/`prev_idx` directly inside the Order struct, interlocked with the pool. Cache locality: the orders sit contiguously in memory.
 
-### Schritt 6 ? ITCH Parser (~25h)
-Das Wow-Feature. Echte NASDAQ-ITCH-Binärdaten statt Simulator. Hier wird aus einem Uni-Projekt ein "läuft auf echten Börsendaten"-Projekt. Big-Endian Byte-Swapping, Message-Typen A/D/E/X/U.
+### Step 6: ITCH parser (about 25h)
+The wow feature. Real NASDAQ ITCH binary data instead of the simulator. This turns a university project into a "runs on real exchange data" project. Big endian byte swapping, message types A/D/E/X/U.
 
-### Schritt 7 ? Benchmarking (~10h)
-Naive `std::map`/`std::list` Version vs. Pool-Version. Latenz p50/p99 mit `std::chrono`. Das ist deine README-Tabelle und der Speedup-Faktor.
+### Step 7: Benchmarking (about 10h)
+Naive `std::map`/`std::list` version vs. pool version. Latency p50/p99 with `std::chrono`. This becomes the README table and the speedup factor.
 
-### Schritt 8 ? Lock-Free SPSC Queue (~15h)
-Parser-Thread + Matching-Thread, dazwischen die Lock-Free Queue mit `alignas(64)` gegen False Sharing. Krönung der Receive Side ? production-grade.
+### Step 8: Lock free SPSC queue (about 15h)
+Parser thread plus matching thread, with the lock free queue in between, `alignas(64)` against false sharing. The crowning piece of the receive side, production grade.
 
 ---
 
-## Reihenfolge auf einen Blick
+## Order at a glance
 
 ```
-1. main.cpp + Makefile        ? JETZT, lauffähig machen
-2. Trade-Ausgabe/-Log         ? fachliche Kernlücke
-3. Aufräumen + README         ? MVP abgeschlossen
-??????????????????????????????? (MVP fertig)
-4. Memory Pool                ? erster Performance-Sprung
-5. Intrusive List             ? verzahnt mit Pool
-6. ITCH Parser                ? Wow-Feature, echte Daten
-7. Benchmarking               ? README-Tabelle
-8. Lock-Free SPSC Queue       ? Krönung
-??????????????????????????????? (Receive Side komplett)
+1. main.cpp + Makefile          now, make it runnable
+2. trade output/log             core functional gap
+3. cleanup + README             MVP done
+                                 (MVP complete)
+4. memory pool                  first performance jump
+5. intrusive list                interlocked with the pool
+6. ITCH parser                  wow feature, real data
+7. benchmarking                 README table
+8. lock free SPSC queue         crowning piece
+                                 (receive side complete)
 ```
 
 ---
 
-## Wichtigster nächster Schritt
+## Most important next step (historical, part 1 is done)
 
-**main.cpp + Makefile.** Nicht Memory Pool, nicht ITCH ? erst lauffähig machen. Selbst schreiben (MVP-Prinzip), bei Bedarf konzeptionell nachfragen statt Code kopieren.
+**main.cpp + Makefile.** Not the memory pool, not ITCH: get it runnable first. Write it yourself (MVP principle), ask conceptual questions if needed instead of copying code.
 
 ---
 
-## Offene Punkte aus dem Projektbericht (zugeordnet)
+## Open points from the project report (mapped)
 
-| Offener Punkt | Wird gelöst in |
+| Open point | Solved in |
 |---|---|
-| Kein Build-System / main.cpp | Schritt 1 |
-| Keine Trade-Ausgabe | Schritt 2 |
-| Header-Warnungen | Schritt 3 |
-| timestamp ungenutzt | Schritt 3 (dokumentieren) / später Pool |
-| Market Orders / Execute-Pfad | nach MVP, optional vor Schritt 4 |
-| display() ohne L2-Aggregation | optional, im Zuge Benchmarking/Politur |
+| No build system / main.cpp | Step 1 |
+| No trade output | Step 2 |
+| Header warnings | Step 3 |
+| timestamp unused | Step 3 (documented), later the pool |
+| Market orders / execute path | after the MVP, optionally before step 4 |
+| display() without L2 aggregation | optional, alongside benchmarking/polish |

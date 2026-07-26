@@ -1,12 +1,12 @@
-// wird zusammen mit test_matching.cpp gebaut (dort steckt DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN),
-// diese Datei traegt nur weitere TEST_CASEs bei.
+// built together with test_matching.cpp (that file has DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN),
+// this file only contributes more TEST_CASEs.
 #include "doctest.h"
 
 #include "../memory_pool.h"
 #include <stdexcept>
 
 
-TEST_CASE("allocate liefert nicht-null und unterschiedliche Zeiger") {
+TEST_CASE("allocate returns non-null, distinct pointers") {
     MemoryPool pool(64, 4);
 
     void* a = pool.allocate();
@@ -20,7 +20,7 @@ TEST_CASE("allocate liefert nicht-null und unterschiedliche Zeiger") {
     pool.deallocate(b);
 }
 
-TEST_CASE("deallocate gefolgt von allocate liefert denselben Block zurueck") {
+TEST_CASE("deallocate followed by allocate returns the same block") {
     MemoryPool pool(64, 4);
 
     void* a = pool.allocate();
@@ -30,12 +30,12 @@ TEST_CASE("deallocate gefolgt von allocate liefert denselben Block zurueck") {
     CHECK(a == b);
 }
 
-TEST_CASE("Pool waechst, wenn die initiale Kapazitaet aufgebraucht ist") {
+TEST_CASE("pool grows once the initial capacity is exhausted") {
     MemoryPool pool(64, 2);
 
     void* a = pool.allocate();
     void* b = pool.allocate();
-    void* c = pool.allocate();   // ueber die initialen 2 Bloecke hinaus -> grow()
+    void* c = pool.allocate();   // beyond the initial 2 blocks -> grow()
 
     CHECK(a != nullptr);
     CHECK(b != nullptr);
@@ -49,6 +49,6 @@ TEST_CASE("Pool waechst, wenn die initiale Kapazitaet aufgebraucht ist") {
     pool.deallocate(c);
 }
 
-TEST_CASE("blockCount 0 wird bei Konstruktion abgelehnt") {
+TEST_CASE("blockCount 0 is rejected at construction") {
     CHECK_THROWS_AS(MemoryPool(64, 0), std::invalid_argument);
 }

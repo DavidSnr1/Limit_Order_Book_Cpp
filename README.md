@@ -1,37 +1,39 @@
 # Limit Order Book
 
-Ein Limit-Order-Book in C++ mit Preis-Zeit-Priorität-Matching — die Kernkomponente, mit der Börsen (und HFT-Firmen) Kauf- und Verkaufsaufträge zusammenführen.
+A C++ limit order book with price time priority matching, the core component exchanges (and HFT firms) use to bring buy and sell orders together.
 
-## Warum das interessant ist
+This project is under active development. It is a learning project, not a finished product; see "Current status" below for what is done and what is still open.
 
-In jedem elektronischen Handelssystem (NASDAQ, NYSE, Krypto-Börsen) trifft eine Order nicht sofort auf einen Handelspartner — sie wartet in einer Warteschlange, sortiert nach Preis und bei gleichem Preis nach Ankunftszeit ("Preis-Zeit-Priorität"). Das Order Book ist die Datenstruktur, die diese Warteschlangen verwaltet und bei jeder neuen Order prüft, ob ein Trade zustande kommt. Latenz zählt hier in Nanosekunden — deshalb ist die Wahl der Datenstrukturen entscheidend, nicht nur die Korrektheit der Logik.
+## Why this is interesting
 
-## Projektstruktur
+In every electronic trading system (NASDAQ, NYSE, crypto exchanges), an order does not meet a counterparty immediately. It waits in a queue, sorted by price, and at the same price by arrival time ("price time priority"). The order book is the data structure that manages these queues and checks after every new order whether a trade can happen. Latency matters in nanoseconds here, so the choice of data structures matters as much as the correctness of the logic.
 
-- `types.h` — Basistypen (`OrderId`, `Price`, `Volume` als `uint64_t`; `Side`, `MessageType`)
-- `order.h` — das `Order`-Struct (inkl. `next_order`/`prev_order` für die Intrusive List)
-- `trade.h` — das `Trade`-Struct (Ergebnis eines Matches)
-- `memory_pool.h` / `memory_pool.cpp` — Pre-allocated Pool mit Free-List statt Heap-Allokation pro Order
-- `order_book.h` / `order_book.cpp` — die Engine: `add_order`, `cancel_order`, `display`, Matching mit Preis-Zeit-Priorität; Preis-Levels sind Intrusive Linked Lists, deren Knoten aus dem `MemoryPool` kommen
-- `feed_simulator.h` / `feed_simulator.cpp` — generiert zufällige Test-Orders
-- `main.cpp` — verbindet Simulator und Order Book zu einer lauffähigen Demo
-- `tests/test_matching.cpp` — Testfälle für Insert/Match/Cancel (doctest)
-- `tests/test_memory_pool.cpp` — Testfälle für den Memory Pool (Allokation, Wiederverwendung, Wachstum, Guard gegen `blockCount == 0`)
+## Project structure
 
-## Bauen & Ausführen
+- `types.h`: base types (`OrderId`, `Price`, `Volume` as `uint64_t`; `Side`, `MessageType`)
+- `order.h`: the `Order` struct (including `next_order`/`prev_order` for the intrusive list)
+- `trade.h`: the `Trade` struct (result of a match)
+- `memory_pool.h` / `memory_pool.cpp`: a pre allocated pool with a free list instead of a heap allocation per order
+- `order_book.h` / `order_book.cpp`: the engine, `add_order`, `cancel_order`, `display`, matching with price time priority; price levels are intrusive linked lists whose nodes come from the `MemoryPool`
+- `feed_simulator.h` / `feed_simulator.cpp`: generates random test orders
+- `main.cpp`: connects the simulator and the order book into a runnable demo
+- `tests/test_matching.cpp`: test cases for insert/match/cancel (doctest)
+- `tests/test_memory_pool.cpp`: test cases for the memory pool (allocation, reuse, growth, guard against `blockCount == 0`)
 
-Voraussetzung: `g++` (C++17) und `make` — z.B. über [MSYS2](https://www.msys2.org/) unter Windows.
+## Build & run
+
+Requires `g++` (C++17) and `make`, for example via [MSYS2](https://www.msys2.org/) on Windows.
 
 ```
-make          # baut app.exe und test.exe
-./app.exe     # 10 simulierte Orders, Buch-Snapshot nach jeder Order
-./test.exe    # Testsuite (doctest)
-make clean    # aufräumen
+make          # builds app.exe and test.exe
+./app.exe     # 10 simulated orders, book snapshot after each order
+./test.exe    # test suite (doctest)
+make clean    # clean up
 ```
 
-## Beispiel-Output
+## Example output
 
-`app.exe` druckt nach jeder eingefügten Order die besten 5 Preisstufen je Seite. Kommt es dabei zu einem Match, wird der Trade live dazwischen ausgegeben:
+`app.exe` prints the best 5 price levels per side after every inserted order. If a match happens, the trade is printed live in between:
 
 ```
 --- BID ---
@@ -48,23 +50,27 @@ Trade @ Quantity 102 @ Price: 102
 105 |  [ 102 ]
 ```
 
-Jede Buch-Zeile: `Preis | [Restvolumen Order 1] [Restvolumen Order 2] ...`, sortiert nach Preis-Zeit-Priorität (bester Bid/Ask zuerst). Der Trade-Preis ist der Preis der Order, die zuerst im Buch lag (Maker/Resting-Preis) — die neu ankommende Order bekommt ggf. eine Preisverbesserung. Alle Trades landen zusätzlich in `trade_log` (für spätere P&L-Auswertung).
+Each book line: `price | [remaining volume order 1] [remaining volume order 2] ...`, sorted by price time priority (best bid/ask first). The trade price is the price of the order that was already resting in the book (maker price); the newly arriving order may get price improvement. All trades are also stored in `trade_log` (for a later P&L calculation).
 
-## Aktueller Stand
+## Current status
 
-MVP (Teil 1) ist fertig. Schritt 4/5 der "Receive Side Masterclass" (siehe [TODO.md](TODO.md)) sind jetzt ebenfalls abgeschlossen: `std::list<Order>` ist komplett aus dem Projekt raus, ersetzt durch einen `MemoryPool` + eine Intrusive Linked List (`next_order`/`prev_order` liegen direkt im `Order`-Struct — jeder Preis-Level in `bids`/`asks` ist nur noch ein `OrderQueue{head, tail}`, keine separate Heap-Allokation pro Listenknoten mehr).
+The MVP (part 1 of [TODO.md](TODO.md)) is done. Steps 4 and 5 of the "receive side masterclass" are also complete: `std::list<Order>` is fully out of the project, replaced by a `MemoryPool` plus an intrusive linked list (`next_order`/`prev_order` live directly inside the `Order` struct; each price level in `bids`/`asks` is just an `OrderQueue{head, tail}`, no separate heap allocation per list node anymore).
 
-Fertig:
-- `MemoryPool` (Allokation, Wiederverwendung, Wachstum, Guard gegen `blockCount == 0`) — eigenständig getestet
-- `add_order` — Pool-Allokation + Placement-New + Verlinken ans Ende der Queue
-- `cancel_order` — Order per `order_map` finden, aus der Kette aushängen (4 Fälle: einziges Element / Kopf / Ende / Mitte), Destruktor + `deallocate`
-- `match()` — arbeitet auf `head`/manuellem Aushängen statt `front()`/`pop_front()`
-- `display()`, `order_volume()` — auf Zeiger-Traversierung umgestellt
+Done:
+- `MemoryPool` (allocation, reuse, growth, guard against `blockCount == 0`), tested independently
+- `add_order`: pool allocation, placement new, linking to the end of the queue
+- `cancel_order`: find the order via `order_map`, unlink it from the chain (4 cases: only element, head, tail, middle), destructor, `deallocate`
+- `match()`: works on `head` and manual unlinking instead of `front()`/`pop_front()`
+- `display()`, `order_volume()`: switched to pointer traversal
 
-Baut sauber (`make all`), keine Compiler-Warnungen, alle Tests grün.
+Builds cleanly with `make all`, no compiler warnings, all tests passing.
 
-Als Nächstes — Rest der "Receive Side Masterclass":
+Next up, the rest of the "receive side masterclass":
 
-- Echter NASDAQ-ITCH-Parser statt Zufalls-Simulator
-- Benchmarking: naive `std::list`- vs. Pool-Version, p50/p99-Latenzen
-- Lock-Free SPSC Queue zur Trennung von Parser- und Matching-Thread
+- A real NASDAQ ITCH parser instead of the random simulator
+- Benchmarking: naive `std::list` vs. pool version, p50/p99 latency
+- A lock free SPSC queue to separate the parser thread from the matching thread
+
+## License
+
+MIT, see [LICENSE](LICENSE).
