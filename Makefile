@@ -6,7 +6,7 @@ all: app test
 app: main.cpp feed_simulator.cpp order_book.cpp memory_pool.cpp
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
-test: tests/test_matching.cpp tests/test_memory_pool.cpp order_book.cpp memory_pool.cpp
+test: tests/test_matching.cpp tests/test_memory_pool.cpp tests/test_spsc_queue.cpp order_book.cpp memory_pool.cpp
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 clean:
