@@ -67,9 +67,8 @@ Builds cleanly with `make all`, no compiler warnings, all tests passing.
 
 Next up, the rest of the "receive side masterclass":
 
-- A real NASDAQ ITCH parser instead of the random simulator
 - Benchmarking: naive `std::list` vs. pool version, p50/p99 latency
-- A lock free SPSC queue to separate the parser thread from the matching thread
+- A lock free SPSC queue to separate the producer (feed simulator) thread from the matching thread
 
 ## License
 

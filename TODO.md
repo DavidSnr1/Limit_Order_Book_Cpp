@@ -2,6 +2,8 @@
 
 Status update: part 1 (the MVP) and steps 4 and 5 of part 2 below are complete. See [README.md](README.md) for the current state of the project; the rest of this file is the original plan, kept as a record of the reasoning and the remaining steps.
 
+Scope change (2026-08-13): the ITCH parser step has been dropped. It doesn't add enough to justify the time, and it would be code the project's owner can't fully explain themselves. The remaining receive-side work is just benchmarking and the lock free SPSC queue; the old step numbering below is kept as a historical record and no longer matches the current plan.
+
 ## Starting point
 
 The core is solid: inserting, matching with price time priority, cancel, 12 green tests. What is missing: the project is not runnable yet and not at production quality. The plan has two parts: first **finish the MVP** (runnable and clean), then the **receive side masterclass** (the roughly 70h extension).
